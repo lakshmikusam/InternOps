@@ -4,6 +4,7 @@ import Attendance from './Attendance'
 import Ratings from './Ratings'
 import Tasks from './Tasks'
 import AdminDashboard from './admin/AdminDashboard'
+import Notifications from './Notifications'
 import Sessions from './Sessions'
 import Meetings from './Meetings'
 import Analytics from './admin/Analytics'
@@ -14,6 +15,7 @@ const nav = [
   { path:'/attendance', label:'Attendance' },
   { path:'/ratings', label:'Ratings' },
   { path:'/tasks', label:'Tasks' },
+  { path:'/notifications', label:'Notifications' },
   { path:'/sessions', label:'Sessions' },
   { path:'/meetings', label:'Meetings' },
   { path:'/analytics', label:'Analytics' },
@@ -38,6 +40,7 @@ export default function Dashboard() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="ratings" element={<Ratings />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="sessions" element={<Sessions />} />
           <Route path="meetings" element={<Meetings />} />
           <Route path="analytics" element={<Analytics />} />
@@ -47,6 +50,7 @@ export default function Dashboard() {
     </div>
   )
 }
+
 
 
 
