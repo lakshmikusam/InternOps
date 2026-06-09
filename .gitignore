@@ -9,6 +9,8 @@ logs/
 uploads/
 tmp/
 .cache/
+.vite/
+**/.vite/
 secrets/
 *.pem
 *.key
