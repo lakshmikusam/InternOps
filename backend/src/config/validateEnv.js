@@ -41,12 +41,7 @@ function validateEnv() {
       console.error(`   • ${key}`);
     }
     
-    // ✅ Only exit if not in test mode, allowing tests to run gracefully
-    if (process.env.NODE_ENV !== 'test') {
-      process.exit(1);
-    } else {
-      console.warn("⚠️ Continuing in test mode despite missing required variables");
-    }
+    process.exit(1);
   }
 }
 
