@@ -5,16 +5,29 @@ import { PageHeader, Card, Input, Table, Badge, Spinner } from '../../components
 
 const MEDAL = ['🥇', '🥈', '🥉']
 
+// ✅ RFC4122 UUID Regular Expression validator string
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function Analytics() {
   const [deptId, setDeptId] = useState('')
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [year, setYear] = useState(new Date().getFullYear())
 
+  // ✅ 1. Populate a dynamic dropdown menu by pulling down real system departments
+  const { data: departments, isLoading: loadingDepts } = useQuery({
+    queryKey: ['departmentsList'],
+    queryFn: () => api.get('/departments').then(r => r.data)
+  })
+
+  // ✅ 2. Execute query ONLY when deptId matches a real formatted UUID
+  const isValidUuid = UUID_REGEX.test(deptId);
+
   const { data: deptAttendance } = useQuery({
     queryKey: ['deptAttendance', deptId, month, year],
     queryFn: () => api.get(`/analytics/department-attendance?departmentId=${deptId}&month=${month}&year=${year}`).then(r => r.data),
-    enabled: !!deptId,
+    enabled: isValidUuid, // ✅ No more keystroke firing! Only executes on a legitimate UUID selection
   })
+
   const { data: topPerformers } = useQuery({ queryKey: ['topPerformers'], queryFn: () => api.get('/analytics/top-performers?role=INTERN&limit=5').then(r => r.data) })
   const { data: trends } = useQuery({ queryKey: ['attendanceTrends'], queryFn: () => api.get('/analytics/attendance-trends?months=6').then(r => r.data) })
 
@@ -66,11 +79,33 @@ export default function Analytics() {
       <Card className="p-5">
         <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">🏢 Department Attendance</h3>
         <div className="flex gap-2 flex-wrap mb-3">
-          <Input placeholder="Department ID" value={deptId} onChange={e => setDeptId(e.target.value)} className="max-w-xs" />
+          
+          {/* ✅ Swapped out plain input text field for an explicit, secure dropdown list selection */}
+          <select
+            value={deptId}
+            onChange={e => setDeptId(e.target.value)}
+            className="flex h-10 w-full max-w-xs rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-gray-700"
+            disabled={loadingDepts}
+          >
+            <option value="">-- Select Department --</option>
+            {departments?.map(d => (
+              <option key={d.id} value={d.id}>
+                {d.name || d.id}
+              </option>
+            ))}
+          </select>
+
           <Input type="number" placeholder="Month" value={month} onChange={e => setMonth(e.target.value)} className="w-24" />
           <Input type="number" placeholder="Year" value={year} onChange={e => setYear(e.target.value)} className="w-28" />
         </div>
-        {!deptId ? <p className="text-gray-400 text-sm">Enter a department ID to view attendance.</p> : !deptAttendance ? <Spinner /> : (
+
+        {!deptId ? (
+          <p className="text-gray-400 text-sm">Select a department from the menu above to view attendance metrics.</p>
+        ) : !isValidUuid ? (
+          <p className="text-red-500 text-sm">A valid structural identifier selection is required.</p>
+        ) : !deptAttendance ? (
+          <Spinner />
+        ) : (
           <Table head={['Name', 'Present', 'Absent', 'Half Day']}>
             {deptAttendance.map(u => (
               <tr key={u.id} className="border-t hover:bg-indigo-50/40">
