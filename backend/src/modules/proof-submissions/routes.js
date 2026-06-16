@@ -16,6 +16,9 @@ async function routes(fastify) {
     '/submit',
     { preHandler: [auth, rbac('INTERN')] },
     async (req, reply) => {
+      // With @fastify/multipart, req.body is not populated until the
+      // multipart stream is consumed via req.file(). Parse the file first,
+      // then read task_id from the parsed fields.
       const data = await req.file();
 
       if (!data)
