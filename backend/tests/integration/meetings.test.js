@@ -20,7 +20,7 @@ beforeAll(async () => {
     url: '/api/auth/csrf-token',
   });
   csrfToken = JSON.parse(csrfRes.body).csrfToken;
-  const csrfCookie = csrfRes.cookies.find(c => c.name === 'csrf-token');
+  const csrfCookie = csrfRes.cookies.find((c) => c.name === 'csrf-token');
   csrfCookieValue = csrfCookie ? csrfCookie.value : csrfToken;
   const loginRes = await app.inject({
     method: 'POST',
@@ -47,7 +47,7 @@ async function createUserAsAdmin(user) {
     method: 'POST',
     url: '/api/auth/register',
     cookies: { 'csrf-token': csrfCookieValue },
-        headers: authHeaders(),
+    headers: authHeaders(),
     payload: user,
   });
   return JSON.parse(res.body);
