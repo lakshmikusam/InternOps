@@ -51,14 +51,24 @@ const nav = [
     icon: '📈',
     roles: ['ADMIN', 'SENIOR_TL'],
   },
+  {
+    path: '/analytics',
+    label: 'Analytics',
+    icon: '📊',
+    roles: ['ADMIN', 'SENIOR_TL'],
+  },
+  {
+    path: '/exports',
+    label: 'Exports',
+    icon: '⬇️',
+    roles: ['ADMIN', 'SENIOR_TL'],
+  },
 ];
 
 const adminNav = [
   { path: '/admin', label: 'Admin Panel', icon: '🛡️' },
   { path: '/departments', label: 'Departments', icon: '🏢' },
-  { path: '/analytics', label: 'Analytics', icon: '📊' },
   { path: '/audit', label: 'Audit Log', icon: '🧾' },
-  { path: '/exports', label: 'Exports', icon: '⬇️' },
   { path: '/assistant', label: 'AI Assistant', icon: '🤖' },
 ];
 
@@ -78,6 +88,9 @@ export default function Dashboard() {
   const role = user?.role;
   const isAdmin = role === 'ADMIN';
   const isManager = ['ADMIN', 'SENIOR_TL', 'TL', 'CAPTAIN'].includes(role);
+  // Reports/Analytics/Exports are restricted to ADMIN and SENIOR_TL on the
+  // backend; gate the matching routes the same way to avoid 403s.
+  const canViewReports = ['ADMIN', 'SENIOR_TL'].includes(role);
 
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar') === 'collapsed'
@@ -280,15 +293,19 @@ export default function Dashboard() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="profile" element={<Profile />} />
             <Route path="sessions" element={<Sessions />} />
-            <Route path="reports" element={<Reports />} />
             <Route path="assistant" element={<InternOpsAssistant />} />
+            {canViewReports && (
+              <>
+                <Route path="reports" element={<Reports />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="exports" element={<Exports />} />
+              </>
+            )}
             {isAdmin && (
               <>
                 <Route path="admin" element={<AdminDashboard />} />
                 <Route path="departments" element={<Departments />} />
-                <Route path="analytics" element={<Analytics />} />
                 <Route path="audit" element={<AuditLog />} />
-                <Route path="exports" element={<Exports />} />
               </>
             )}
           </Routes>
