@@ -13,7 +13,14 @@ describe('requireFreshRole Middleware (#484)', () => {
       `INSERT INTO users (id, email, password_hash, role, full_name, suspended, deleted_at)
        VALUES ($1, $2, $3, $4, $5, $6, NULL)
        ON CONFLICT (id) DO UPDATE SET role = $4, suspended = $6`,
-      [testUserId, 'test-user@internops.com', TEST_PASSWORD_HASH, 'SENIOR_TL', 'Test User', false]
+      [
+        testUserId,
+        'test-user@internops.com',
+        TEST_PASSWORD_HASH,
+        'SENIOR_TL',
+        'Test User',
+        false,
+      ]
     );
   });
 
@@ -29,11 +36,11 @@ describe('requireFreshRole Middleware (#484)', () => {
   it('should update req.user.role with fresh DB value when not suspended', async () => {
     // Setup: mock request and reply objects
     const request = {
-      user: { id: testUserId, role: 'ADMIN' } // Stale role (not actually ADMIN in DB)
+      user: { id: testUserId, role: 'ADMIN' }, // Stale role (not actually ADMIN in DB)
     };
     const reply = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
     };
 
     // Call middleware
@@ -47,14 +54,16 @@ describe('requireFreshRole Middleware (#484)', () => {
 
   it('should reject user with 401 when user is suspended', async () => {
     // Suspend the user in DB
-    await pool.query('UPDATE users SET suspended = true WHERE id = $1', [testUserId]);
+    await pool.query('UPDATE users SET suspended = true WHERE id = $1', [
+      testUserId,
+    ]);
 
     const request = {
-      user: { id: testUserId, role: 'SENIOR_TL' }
+      user: { id: testUserId, role: 'SENIOR_TL' },
     };
     const reply = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
     };
 
     await requireFreshRole(request, reply);
@@ -66,14 +75,16 @@ describe('requireFreshRole Middleware (#484)', () => {
 
   it('should reject user with 401 when user is deleted', async () => {
     // Delete the user in DB
-    await pool.query('UPDATE users SET deleted_at = NOW() WHERE id = $1', [testUserId]);
+    await pool.query('UPDATE users SET deleted_at = NOW() WHERE id = $1', [
+      testUserId,
+    ]);
 
     const request = {
-      user: { id: testUserId, role: 'SENIOR_TL' }
+      user: { id: testUserId, role: 'SENIOR_TL' },
     };
     const reply = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
     };
 
     await requireFreshRole(request, reply);
@@ -87,11 +98,11 @@ describe('requireFreshRole Middleware (#484)', () => {
     const nonExistentId = uuidv4();
 
     const request = {
-      user: { id: nonExistentId, role: 'SENIOR_TL' }
+      user: { id: nonExistentId, role: 'SENIOR_TL' },
     };
     const reply = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
     };
 
     await requireFreshRole(request, reply);
@@ -103,14 +114,16 @@ describe('requireFreshRole Middleware (#484)', () => {
 
   it('should handle role demotion - stale JWT becomes current', async () => {
     // Simulate role demotion in DB
-    await pool.query("UPDATE users SET role = 'CAPTAIN' WHERE id = $1", [testUserId]);
+    await pool.query("UPDATE users SET role = 'CAPTAIN' WHERE id = $1", [
+      testUserId,
+    ]);
 
     const request = {
-      user: { id: testUserId, role: 'SENIOR_TL' } // Stale JWT still says SENIOR_TL
+      user: { id: testUserId, role: 'SENIOR_TL' }, // Stale JWT still says SENIOR_TL
     };
     const reply = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
     };
 
     await requireFreshRole(request, reply);

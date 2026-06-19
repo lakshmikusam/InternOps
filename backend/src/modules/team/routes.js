@@ -187,7 +187,14 @@ async function routes(fastify) {
   // Suspend / activate a member (within hierarchy).
   fastify.patch(
     '/members/:id/status',
-    { preHandler: [auth, requireFreshRole, rbac(...MANAGER_ROLES), ownership('id')] },
+    {
+      preHandler: [
+        auth,
+        requireFreshRole,
+        rbac(...MANAGER_ROLES),
+        ownership('id'),
+      ],
+    },
     async (req, reply) => {
       const { suspended } = z
         .object({ suspended: z.boolean() })
@@ -208,7 +215,14 @@ async function routes(fastify) {
   // Promote / demote a member's role (within hierarchy).
   fastify.patch(
     '/members/:id/role',
-    { preHandler: [auth, requireFreshRole, rbac(...MANAGER_ROLES), ownership('id')] },
+    {
+      preHandler: [
+        auth,
+        requireFreshRole,
+        rbac(...MANAGER_ROLES),
+        ownership('id'),
+      ],
+    },
     async (req, reply) => {
       const { role } = z
         .object({ role: z.enum(ASSIGNABLE_ROLES) })
