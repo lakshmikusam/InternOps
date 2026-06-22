@@ -253,12 +253,10 @@ async function routes(fastify) {
         allowed = await checkHierarchyAccess(req.user.id, userId);
       }
       if (!allowed) {
-        return reply
-          .status(403)
-          .send({
-            error:
-              'Only creator, admin, or manager of the attendee can add attendees',
-          });
+        return reply.status(403).send({
+          error:
+            'Only creator, admin, or manager of the attendee can add attendees',
+        });
       }
 
       // Validate that the target user exists and is not suspended/deleted.
@@ -296,12 +294,10 @@ async function routes(fastify) {
         allowed = await checkHierarchyAccess(req.user.id, req.params.userId);
       }
       if (!allowed) {
-        return reply
-          .status(403)
-          .send({
-            error:
-              'Only creator, admin, or manager of the attendee can remove attendees',
-          });
+        return reply.status(403).send({
+          error:
+            'Only creator, admin, or manager of the attendee can remove attendees',
+        });
       }
 
       await repo.removeAttendee(req.params.id, req.params.userId);
