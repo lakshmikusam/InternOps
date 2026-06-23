@@ -103,7 +103,7 @@ async function getCachedResponse(payload) {
   try {
     const redis = await getRedisClient();
     if (redis) {
-      const cached = await redis.get(`ai:cache:${key}`);
+      const cached = await redis.get(`ai:cache:${payload.userId}:${key}`);
       if (cached) {
         return JSON.parse(cached);
       }
@@ -122,9 +122,13 @@ async function setCachedResponse(payload, value) {
   try {
     const redis = await getRedisClient();
     if (redis) {
-      await redis.set(`ai:cache:${key}`, JSON.stringify(value), {
-        PX: CACHE_TTL_MS,
-      });
+      await redis.set(
+        `ai:cache:${payload.userId}:${key}`,
+        JSON.stringify(value),
+        {
+          PX: CACHE_TTL_MS,
+        }
+      );
       return;
     }
   } catch (error) {
