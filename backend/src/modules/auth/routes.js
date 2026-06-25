@@ -4,7 +4,7 @@ const rbac = require('../../middleware/rbac');
 const { bruteForceCheck } = require('../../middleware/bruteForce');
 const auth = require('../../middleware/auth');
 const { extractRequestInfo } = require('../../utils/audit');
-const { generateToken } = require('../../middleware/csrf');
+const { generateToken, rotateSession, } = require('../../middleware/csrf');
 const { verifyEmail, sendVerificationEmail } = require('./verificationService');
 const repo = require('./repository');
 const { forgotPassword, resetPassword } = require('./resetService');
@@ -64,6 +64,8 @@ async function routes(fastify) {
         sameSite: 'strict',
         path: '/api/auth/refresh',
       });
+
+      rotateSession(reply);
 
       // From fix/deferred-audit-log-486
       req.auditOnResponse = {
@@ -167,7 +169,6 @@ async function routes(fastify) {
 
   // Get CSRF token
   fastify.get('/csrf-token', async (req, reply) => {
-    const { generateToken } = require('../../middleware/csrf');
     const csrfToken = generateToken(req, reply);
     // Also expose the token in a non-HttpOnly cookie so the SPA can
     // echo it in the X-CSRF-Token header on mutation requests. The

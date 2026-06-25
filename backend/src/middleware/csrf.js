@@ -74,6 +74,12 @@ function writeSession(reply, sessionId) {
   });
 }
 
+function rotateSession(reply) {
+  const sid = newSessionId();
+  writeSession(reply, sid);
+  return tokenFor(sid);
+}
+
 function getOrCreateToken(request, reply) {
   let sid = readSession(request);
   if (!sid) {
@@ -127,8 +133,13 @@ const csrfMiddleware = csrfCheck;
 
 module.exports = {
   generateToken,
+  rotateSession,
   csrfProtection,
   csrfMiddleware,
-  // exported for tests
-  _internal: { tokenFor, verifySigned, readSession, writeSession },
+  _internal: {
+    tokenFor,
+    verifySigned,
+    readSession,
+    writeSession,
+  },
 };
