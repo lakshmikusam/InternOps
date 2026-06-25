@@ -16,7 +16,9 @@ async function createTask({
 
 async function assignTask(taskId, userIds, assignedBy) {
   if (!userIds || userIds.length === 0) return;
-  const values = userIds.map((_, i) => `($1, $${i + 2}, $${userIds.length + 2})`).join(',');
+  const values = userIds
+    .map((_, i) => `($1, $${i + 2}, $${userIds.length + 2})`)
+    .join(',');
   await pool.query(
     `INSERT INTO task_assignments (task_id, user_id, assigned_by) VALUES ${values}`,
     [taskId, ...userIds, assignedBy]
