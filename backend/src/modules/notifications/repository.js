@@ -1,10 +1,20 @@
-﻿const pool = require('../../config/db');
+const pool = require('../../config/db');
 
 async function send(userId, message) {
-  await pool.query(
-    'INSERT INTO notifications (user_id, message) VALUES ($1,$2)',
+  const res = await pool.query(
+    'INSERT INTO notifications (user_id, message) VALUES ($1,$2) RETURNING *',
     [userId, message]
   );
+  try {
+    const { notifyUser } = require('../../websocket');
+    const unread = await getUnreadCount(userId);
+    await notifyUser(userId, 'notification-received', {
+      notification: res.rows[0],
+      unreadCount: unread,
+    });
+  } catch (err) {
+    console.error('[Websocket Notify] Error:', err.message);
+  }
 }
 
 async function get(userId, { page = 1, limit = 20 } = {}) {

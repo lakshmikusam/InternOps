@@ -23,8 +23,9 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import api from '../lib/axios';
 import { UserAvatar } from '../components/ui';
 import useAuthStore from '../store/auth';
@@ -95,6 +96,39 @@ export default function DashboardLayout() {
     () => localStorage.getItem('theme') === 'dark'
   );
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const queryClient = useQueryClient();
+  const token = useAuthStore((s) => s.accessToken);
+
+  const { data: unreadData } = useQuery({
+    queryKey: ['unreadNotificationsCount'],
+    queryFn: () => api.get('/notifications/unread-count').then((r) => r.data),
+    enabled: !!token,
+  });
+
+  const unreadCount = unreadData?.unread || 0;
+
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io('/', {
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+    });
+
+    socket.on('connect', () => {
+      socket.emit('authenticate', token);
+    });
+
+    socket.on('notification-received', () => {
+      queryClient.invalidateQueries({ queryKey: ['unreadNotificationsCount'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [token, queryClient]);
 
   const { data: me } = useQuery({
     queryKey: ['myProfile'],
@@ -243,9 +277,14 @@ export default function DashboardLayout() {
             </button>
             <Link
               to="/notifications"
-              className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
+              className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition relative"
             >
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white leading-none shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Link>
             <Link
               to="/profile"

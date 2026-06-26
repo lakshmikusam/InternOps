@@ -23,7 +23,6 @@ export default function Notifications() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  className = 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700';
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications', page],
@@ -32,8 +31,11 @@ export default function Notifications() {
     refetchInterval: 30000,
     refetchIntervalInBackground: false,
   });
-  const invalidate = () =>
+
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['unreadNotificationsCount'] });
+  };
 
   const markReadMut = useMutation({
     mutationFn: (id) => api.patch(`/notifications/${id}/read`),
