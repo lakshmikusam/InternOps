@@ -6,9 +6,11 @@ const config = require('./config');
 const pool = require('./config/db');
 const metrics = require('./utils/metrics');
 const { initializeWebSocket } = require('./websocket');
+const noticesRoutes = require('./modules/notices/routes');
 
 const app = Fastify({
-  trustProxy: true,
+  trustProxy:
+    config.nodeEnv === 'production' ? [config.trustedProxyCidr] : 'loopback',
   logger:
     config.nodeEnv === 'development'
       ? { transport: { target: 'pino-pretty' } }
@@ -138,6 +140,8 @@ app.register(require('./modules/ai/routes'), {
 app.register(require('./modules/uptoskills/routes'), {
   prefix: '/api/uptoskills',
 });
+
+app.register(noticesRoutes);
 
 app.get('/', async (req, reply) => {
   reply.redirect('/docs');

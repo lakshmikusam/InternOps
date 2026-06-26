@@ -3,13 +3,13 @@ const { z } = require('zod');
 const rbac = require('../../middleware/rbac');
 const { bruteForceCheck } = require('../../middleware/bruteForce');
 const auth = require('../../middleware/auth');
-const { extractRequestInfo } = require('../../utils/audit');
-const { generateToken, rotateSession } = require('../../middleware/csrf');
+const audit = require('../../utils/audit');
+const { generateToken, rotateSession, rotateAndSetCsrf } = require('../../middleware/csrf');
 const { verifyEmail, sendVerificationEmail } = require('./verificationService');
 const repo = require('./repository');
 const { forgotPassword, resetPassword } = require('./resetService');
 const isProduction = process.env.NODE_ENV === 'production';
-const { createAuditLog } = require('../../utils/audit');
+
 async function routes(fastify) {
   // Register
   fastify.post(
@@ -50,14 +50,8 @@ async function routes(fastify) {
       const { email, password } = z
         .object({ email: z.string().email(), password: z.string() })
         .parse(req.body);
-
-      const result = await service.login(
-        email,
-        password,
-        req.ip,
-        req.headers['user-agent']
-      );
-
+      const userAgent = req.headers['user-agent'];
+      const result = await service.login(email, password, req.ip, userAgent);
       reply.setCookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: isProduction,
@@ -65,9 +59,8 @@ async function routes(fastify) {
         path: '/api/auth/refresh',
       });
 
-      rotateSession(reply);
+      rotateAndSetCsrf(req, reply, result.user.id);
 
-      // From fix/deferred-audit-log-486
       req.auditOnResponse = {
         userId: result.user.id,
         action: 'LOGIN',
@@ -75,7 +68,6 @@ async function routes(fastify) {
         userAgent: req.headers['user-agent'],
       };
 
-      // From master
       const response = {
         accessToken: result.accessToken,
         user: result.user,
@@ -84,21 +76,17 @@ async function routes(fastify) {
       reply.send(response);
 
       req.log.info(
-        {
-          action: 'LOGIN',
-          userId: result.user.id,
-          ip: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
+        { action: 'LOGIN', userId: result.user.id, ip: req.ip, userAgent },
         'login success'
       );
-
-      createAuditLog({
-        userId: result.user.id,
-        action: 'LOGIN',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-      }).catch((err) => req.log.error(err, 'audit log failed'));
+      audit
+        .createAuditLog({
+          userId: result.user.id,
+          action: 'LOGIN',
+          ipAddress: req.ip,
+          userAgent,
+        })
+        .catch((err) => req.log.error(err, 'audit log failed'));
     }
   );
 
@@ -151,7 +139,6 @@ async function routes(fastify) {
 
       reply.clearCookie('refreshToken', { path: '/api/auth/refresh' });
 
-      // From fix/deferred-audit-log-486
       req.auditOnResponse = {
         userId: req.user.id,
         action: 'LOGOUT',
@@ -159,10 +146,8 @@ async function routes(fastify) {
         userAgent: req.headers['user-agent'],
       };
 
-      // From master
       reply.clearCookie('csrf-sid', { path: '/' });
       reply.clearCookie('csrf-token', { path: '/' });
-
       return { message: 'Logged out' };
     }
   );
@@ -170,10 +155,6 @@ async function routes(fastify) {
   // Get CSRF token
   fastify.get('/csrf-token', async (req, reply) => {
     const csrfToken = generateToken(req, reply);
-    // Also expose the token in a non-HttpOnly cookie so the SPA can
-    // echo it in the X-CSRF-Token header on mutation requests. The
-    // actual validation is bound to the signed session cookie, not this
-    // readable one.
     reply.setCookie('csrf-token', csrfToken, {
       httpOnly: false,
       secure: isProduction,
@@ -205,7 +186,7 @@ async function routes(fastify) {
   // Forgot password
   fastify.post('/forgot-password', async (req, reply) => {
     const { email } = z.object({ email: z.string().email() }).parse(req.body);
-    req.auditOnResponse = await forgotPassword(email, extractRequestInfo(req));
+    await forgotPassword(email, audit.extractRequestInfo(req));
     return { message: 'If that email exists, a reset link has been sent.' };
   });
 
@@ -214,11 +195,7 @@ async function routes(fastify) {
     const { token, newPassword } = z
       .object({ token: z.string(), newPassword: z.string().min(8) })
       .parse(req.body);
-    req.auditOnResponse = await resetPassword(
-      token,
-      newPassword,
-      extractRequestInfo(req)
-    );
+    await resetPassword(token, newPassword, audit.extractRequestInfo(req));
     return {
       message:
         'Password reset successful. Please log in with your new password.',

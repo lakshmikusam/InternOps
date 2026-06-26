@@ -246,10 +246,23 @@ async function parseJsonResponseWithLimit(response, providerName) {
   }
 }
 
+const MAX_MESSAGES = 32;
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_TOTAL_CHARS = 32000;
+
 function buildPrompt(messages = []) {
-  return messages
-    .map((m) => `${m.role || 'user'}: ${m.content || ''}`)
-    .join('\n');
+  const trimmed = messages.slice(0, MAX_MESSAGES).map((m) => ({
+    role: m.role,
+    content: String(m.content || '').slice(0, MAX_MESSAGE_CHARS),
+  }));
+
+  const totalChars = trimmed.reduce((sum, m) => sum + m.content.length, 0);
+
+  if (totalChars > MAX_TOTAL_CHARS) {
+    throw new Error('Prompt too long');
+  }
+
+  return trimmed.map((m) => `${m.role}: ${m.content}`).join('\n');
 }
 
 async function callOpenAICompatible({
@@ -414,7 +427,13 @@ const providerRegistry = {
 };
 
 async function generateAIResponse({ userId, messages }) {
-  const payload = { userId, messages };
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const sanitizedMessages = safeMessages.slice(-16).map((m) => ({
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    content: String(m.content || '').slice(0, 2000),
+  }));
+
+  const payload = { userId, messages: sanitizedMessages };
   const cached = await getCachedResponse(payload);
 
   if (cached) {
@@ -451,7 +470,7 @@ async function generateAIResponse({ userId, messages }) {
     }
 
     try {
-      const content = await provider.call(messages);
+      const content = await provider.call(sanitizedMessages);
 
       recordSuccess(providerName);
 
