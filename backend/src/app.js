@@ -12,8 +12,7 @@ const { initializeWebSocket } = require('./websocket');
 const noticesRoutes = require('./modules/notices/routes');
 
 const app = Fastify({
-  trustProxy:
-    config.nodeEnv === 'production' ? [config.trustedProxyCidr] : 'loopback',
+  trustProxy: config.nodeEnv === 'production' ? true : 'loopback',
   logger:
     config.nodeEnv === 'development'
       ? { transport: { target: 'pino-pretty' } }
