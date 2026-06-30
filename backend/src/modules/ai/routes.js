@@ -156,8 +156,14 @@ async function routes(fastify) {
       preHandler: [auth, rbac('ADMIN')],
     },
     async () => {
+      const providers = getProviderHealth().map((provider) => ({
+        name: provider.name,
+        status: provider.available ? 'healthy' : 'unhealthy',
+        lastErrorMessage: provider.lastError?.message || null,
+      }));
+
       return {
-        providers: getProviderHealth(),
+        providers,
       };
     }
   );
