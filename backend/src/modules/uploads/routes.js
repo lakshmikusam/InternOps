@@ -44,7 +44,6 @@ function detectMimeFromBuffer(buf) {
   }
 
   for (const [mime, signatures] of Object.entries(MAGIC_BYTES)) {
-
     for (const sig of signatures) {
       if (sig.every((byte, i) => buf[i] === byte)) {
         return mime;
