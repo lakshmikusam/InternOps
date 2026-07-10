@@ -225,21 +225,23 @@ export default function Profile() {
                     </div>
                   )}
 
-<label
-  className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 shadow-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all ${
-    avatarMut.isPending
-      ? 'opacity-60 cursor-not-allowed'
-      : 'cursor-pointer hover:scale-105 hover:bg-indigo-50 dark:hover:bg-slate-700'
-  }`}
-  title={avatarMut.isPending ? 'Uploading...' : 'Change avatar'}
->
+                  <label
+                    className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 shadow-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all ${
+                      avatarMut.isPending
+                        ? 'opacity-60 cursor-not-allowed'
+                        : 'cursor-pointer hover:scale-105 hover:bg-indigo-50 dark:hover:bg-slate-700'
+                    }`}
+                    title={
+                      avatarMut.isPending ? 'Uploading...' : 'Change avatar'
+                    }
+                  >
                     {avatarMut.isPending ? (
-  <span className="text-[10px] font-semibold">...</span>
-) : (
-  <Camera className="w-4 h-4" />
-)}
+                      <span className="text-[10px] font-semibold">...</span>
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
                     <input
-                       disabled={avatarMut.isPending}
+                      disabled={avatarMut.isPending}
                       type="file"
                       accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
                       className="hidden"
