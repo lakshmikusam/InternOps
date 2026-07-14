@@ -36,21 +36,30 @@ export default function Meetings() {
     meetingUrl: '',
     startTime: '',
     endTime: '',
+    departmentId: '',
   });
   const [attendees, setAttendees] = useState([]);
+  const [filterDepartmentId, setFilterDepartmentId] = useState('');
 
   const canCreate = ['ADMIN', 'SENIOR_TL', 'TL'].includes(user?.role);
 
-  const {
-    data: rawMeetings,
-    isLoading,
-    isError: meetingsIsError,
-    error: meetingsError,
-    refetch: refetchMeetings,
-  } = useQuery({
-    queryKey: ['meetings'],
-    queryFn: () => api.get('/meetings').then((res) => res.data),
-  });
+const {
+  data: rawMeetings,
+  isLoading,
+  isError: meetingsIsError,
+  error: meetingsError,
+  refetch: refetchMeetings,
+} = useQuery({
+  queryKey: ['meetings', filterDepartmentId],
+  queryFn: () =>
+    api
+      .get('/meetings', {
+        params: {
+          departmentId: filterDepartmentId || undefined,
+        },
+      })
+      .then((res) => res.data),
+});
 
   const meetings = Array.isArray(rawMeetings)
     ? rawMeetings
@@ -67,19 +76,26 @@ export default function Meetings() {
     enabled: canCreate,
   });
 
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => api.get('/departments').then((res) => res.data),
+    enabled: canCreate,
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/meetings', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
       setShowForm(false);
       setForm({
-        title: '',
-        description: '',
-        meetingDate: '',
-        meetingUrl: '',
-        startTime: '',
-        endTime: '',
-      });
+  title: '',
+  description: '',
+  meetingDate: '',
+  meetingUrl: '',
+  startTime: '',
+  endTime: '',
+  departmentId: '',
+});
       setAttendees([]);
     },
   });
@@ -187,6 +203,32 @@ export default function Meetings() {
                 disabled={createMutation.isPending}
               />
             </div>
+            <div>
+  <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">
+    Department
+    <span className="normal-case font-medium text-slate-400">
+      {' '}
+      (optional)
+    </span>
+  </label>
+
+  <select
+    value={form.departmentId}
+    onChange={(e) =>
+      setForm({ ...form, departmentId: e.target.value })
+    }
+    disabled={createMutation.isPending}
+    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm"
+  >
+    <option value="">No specific department</option>
+
+    {departments.map((d) => (
+      <option key={d.id} value={d.id}>
+        {d.name}
+      </option>
+    ))}
+  </select>
+</div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
