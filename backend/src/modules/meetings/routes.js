@@ -79,29 +79,33 @@ async function routes(fastify) {
         tags: ['Meetings'],
         description: 'List meetings',
         querystring: toSchema(
-          z.object({ from: z.string().optional(), to: z.string().optional() ,departmentId: z.string().uuid().optional(),})
+          z.object({
+            from: z.string().optional(),
+            to: z.string().optional(),
+            departmentId: z.string().uuid().optional(),
+          })
         ),
       },
       preHandler: [auth],
     },
     async (req) => {
       const { from, to, departmentId: requestedDeptId } = req.query;
-const ownDepartmentId = await repo.getUserDepartmentId(req.user.id);
+      const ownDepartmentId = await repo.getUserDepartmentId(req.user.id);
 
-const effectiveDepartmentId =
-  req.user.role === 'ADMIN' && requestedDeptId
-    ? requestedDeptId
-    : req.user.role !== 'INTERN'
-      ? ownDepartmentId
-      : null;
+      const effectiveDepartmentId =
+        req.user.role === 'ADMIN' && requestedDeptId
+          ? requestedDeptId
+          : req.user.role !== 'INTERN'
+            ? ownDepartmentId
+            : null;
 
-const result = await repo.listMeetings({
-  userId: req.user.id,
-  departmentId: effectiveDepartmentId,
-   requestedDepartmentId: requestedDeptId,
-  fromDate: from,
-  toDate: to,
-});
+      const result = await repo.listMeetings({
+        userId: req.user.id,
+        departmentId: effectiveDepartmentId,
+        requestedDepartmentId: requestedDeptId,
+        fromDate: from,
+        toDate: to,
+      });
       return {
         ...result,
         data: result.data.map(formatMeeting),
