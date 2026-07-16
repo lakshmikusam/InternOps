@@ -44,7 +44,7 @@ async function removeAttendee(meetingId, userId) {
 async function listMeetings({
   userId,
   departmentId,
-   requestedDepartmentId,
+  requestedDepartmentId,
   fromDate,
   toDate,
   page = 1,
